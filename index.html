@@ -3,12 +3,13 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>Link Shortener with Verification</title>
-<!-- Font Awesome CDN for icons -->
+<title>Link Shortener with reCAPTCHA</title>
+<!-- Font Awesome CDN for copy icon -->
 <link
   href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"
   rel="stylesheet"
 />
+
 <style>
   body {
     font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
@@ -29,57 +30,48 @@
     margin-bottom: 24px;
     color: #333;
   }
-
-  /* Input Group */
-  .input-group {
-    display: flex;
-    gap: 0;
-    margin-bottom: 24px;
-    border-radius: 12px;
-    overflow: hidden;
-    box-shadow: 0 0 0 2px #ddd;
-  }
-  .input-wrapper {
-    position: relative;
-    flex: 1;
-  }
   input[type="text"] {
     width: 100%;
-    padding: 14px 44px 14px 16px;
-    font-size: 16px;
-    border: none;
+    padding: 14px 20px;
+    font-size: 17px;
+    border: 2px solid #ddd;
+    border-radius: 12px 0 0 12px;
     outline: none;
+    transition: border-color 0.3s ease;
     box-sizing: border-box;
   }
-  .paste-icon {
-    position: absolute;
-    right: 14px;
-    top: 50%;
-    transform: translateY(-50%);
-    font-size: 18px;
-    color: #555;
-    cursor: pointer;
-    user-select: none;
+  input[type="text"]:focus {
+    border-color: #007bff;
   }
+
+  /* Button */
   button#shortenBtn {
+    padding: 14px 20px;
+    font-size: 17px;
+    border: none;
+    border-radius: 0 12px 12px 0;
     background: #007bff;
     color: white;
-    padding: 14px 18px;
-    font-size: 16px;
-    border: none;
     cursor: pointer;
-    transition: background 0.3s;
+    transition: background 0.3s ease;
     box-sizing: border-box;
   }
   button#shortenBtn:hover {
     background: #0056b3;
   }
 
-  /* Shortened link area */
+  .input-group {
+    display: flex;
+    margin-bottom: 24px;
+  }
+
   #shortenedLink {
     font-size: 16px;
     color: #333;
-    margin-bottom: 10px;
+  }
+  #shortenedLink p {
+    margin-bottom: 6px;
+    font-weight: 600;
   }
   #shortenedLink .link-area {
     display: flex;
@@ -107,42 +99,33 @@
     color: #004080;
   }
   #copyMessage {
-    margin-top: 8px;
+    margin-top: 10px;
     font-size: 14px;
     color: green;
     height: 18px;
   }
 
-  /* Verification and timer buttons */
-  #robotBtn,
+  #goBtn,
   #timerArea,
-  #goBtn {
+  #robotArea {
     display: none;
     margin-top: 20px;
-    border-radius: 8px;
-    padding: 12px 24px;
-    font-size: 16px;
-    border: none;
-  }
-  #robotBtn {
-    background: #28a745;
-    color: white;
-    cursor: pointer;
-  }
-  #robotBtn:hover {
-    background: #1e7e34;
-  }
-  #timerArea {
-    font-size: 18px;
-    color: #555;
   }
   #goBtn {
     background: #007bff;
     color: white;
+    padding: 12px 24px;
+    font-size: 16px;
+    border-radius: 8px;
+    border: none;
     cursor: pointer;
   }
   #goBtn:hover {
     background: #0056b3;
+  }
+  #timerArea {
+    font-size: 18px;
+    color: #555;
   }
 
   /* Responsive */
@@ -162,7 +145,6 @@
       border-radius: 12px 12px 0 0;
       margin-bottom: 10px;
       width: 100%;
-      padding-right: 44px;
     }
     button#shortenBtn {
       border-radius: 0 0 12px 12px;
@@ -170,6 +152,10 @@
     }
   }
 </style>
+
+<!-- Load Google reCAPTCHA v2 -->
+<script src="https://www.google.com/recaptcha/api.js" async defer></script>
+
 </head>
 <body>
 <div class="container" id="mainArea"></div>
@@ -187,25 +173,28 @@
     } else {
       container.innerHTML = `
         <h2>Link Verification</h2>
-        <button id="robotBtn">I am not Robot</button>
+        <div id="robotArea" class="g-recaptcha" data-sitekey="6Ld1akgrAAAAACrLxNX0hA7GoxT1REw7h3uZKxb_" data-callback="onRecaptchaSuccess"></div>
         <div id="timerArea">Please wait <span id="timer">10</span> seconds...</div>
         <button id="goBtn">Get Ready</button>
       `;
 
-      const robotBtn = document.getElementById("robotBtn");
+      const robotArea = document.getElementById("robotArea");
       const timerArea = document.getElementById("timerArea");
       const goBtn = document.getElementById("goBtn");
 
-      robotBtn.style.display = "inline-block";
+      timerArea.style.display = "none";
+      goBtn.style.display = "none";
 
-      robotBtn.onclick = () => {
-        robotBtn.style.display = "none";
-        timerArea.style.display = "block";
+      window.onRecaptchaSuccess = function() {
+        // reCAPTCHA সফল হলে এখানে আসবে
+        robotArea.style.display = "none"; // reCAPTCHA লুকিয়ে দাও
+        timerArea.style.display = "block"; // টাইমার দেখাও
 
         let count = 10;
+        const timerSpan = document.getElementById("timer");
         const interval = setInterval(() => {
           count--;
-          document.getElementById("timer").innerText = count;
+          timerSpan.textContent = count;
           if (count === 0) {
             clearInterval(interval);
             timerArea.style.display = "none";
@@ -223,10 +212,7 @@
     container.innerHTML = `
       <h2>Link Shortener</h2>
       <div class="input-group">
-        <div class="input-wrapper">
-          <input type="text" id="originalUrl" placeholder="Paste your URL here" autocomplete="off" />
-          <i class="fa-solid fa-clipboard paste-icon" id="pasteIcon" title="Paste"></i>
-        </div>
+        <input type="text" id="originalUrl" placeholder="Paste your URL here" autocomplete="off" />
         <button id="shortenBtn">Shorten</button>
       </div>
       <div id="shortenedLink">
@@ -244,17 +230,6 @@
     const copyIcon = document.getElementById("copyIcon");
     const linkArea = container.querySelector(".link-area");
     const copyMessage = document.getElementById("copyMessage");
-    const pasteIcon = document.getElementById("pasteIcon");
-
-    // Paste from clipboard to input on paste icon click
-    pasteIcon.onclick = async () => {
-      try {
-        const text = await navigator.clipboard.readText();
-        originalUrlInput.value = text;
-      } catch {
-        alert("Clipboard access denied or not supported.");
-      }
-    };
 
     shortenBtn.onclick = () => {
       const originalUrl = originalUrlInput.value.trim();
@@ -283,10 +258,14 @@
     };
 
     copyIcon.onclick = () => {
-      const shortUrl = shortLink.href;
-      navigator.clipboard.writeText(shortUrl).then(() => {
-        copyMessage.textContent = "Copied to clipboard!";
-        setTimeout(() => (copyMessage.textContent = ""), 2000);
+      if (!shortLink.href) return;
+      navigator.clipboard.writeText(shortLink.href).then(() => {
+        copyMessage.textContent = "Copied!";
+        setTimeout(() => {
+          copyMessage.textContent = "";
+        }, 1500);
+      }).catch(() => {
+        copyMessage.textContent = "Copy failed";
       });
     };
   }
