@@ -3,179 +3,224 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Custom Link Shortener</title>
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
+  <title>Link Shortener</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"/>
   <script src="https://www.google.com/recaptcha/api.js" async defer></script>
+  <script src="https://cdn.jsdelivr.net/npm/lz-string@1.4.4/libs/lz-string.min.js"></script>
   <style>
+    :root {
+      --main-color: #ff3131;
+    }
     body {
       margin: 0;
-      font-family: Arial, sans-serif;
-      background: #fff;
-      color: #333;
+      padding: 0;
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background-color: #f4f4f4;
     }
-    #header {
+    .header {
+      background: var(--main-color);
+      color: white;
+      padding: 15px 20px;
       display: flex;
       justify-content: space-between;
       align-items: center;
-      background-color: #ff3131;
-      color: white;
-      padding: 10px 20px;
     }
-    #header img {
-      height: 40px;
+    .header img {
+      height: 30px;
     }
-    #header i {
-      font-size: 24px;
+    .header i {
+      font-size: 22px;
     }
-    #container {
+    .container {
+      max-width: 480px;
+      margin: 40px auto;
+      background: #fff;
+      border-radius: 12px;
+      padding: 30px 25px;
+      box-shadow: 0 8px 16px rgba(0,0,0,0.1);
       text-align: center;
-      padding: 40px 20px;
+    }
+    h2 {
+      margin-bottom: 24px;
+      color: #333;
     }
     input[type="text"] {
-      padding: 10px;
-      width: 70%;
-      max-width: 400px;
-      font-size: 16px;
+      width: 100%;
+      padding: 14px;
+      font-size: 17px;
+      border: 2px solid #ddd;
+      border-radius: 12px;
+      outline: none;
+      box-sizing: border-box;
     }
     button {
-      padding: 10px 20px;
-      background-color: #ff3131;
-      color: white;
-      border: none;
-      cursor: pointer;
-      margin-top: 10px;
-    }
-    button:hover {
-      opacity: 0.9;
-    }
-    #timerArea, #goBtn {
       margin-top: 20px;
+      width: 100%;
+      padding: 14px;
+      font-size: 17px;
+      border: none;
+      border-radius: 12px;
+      color: white;
+      cursor: pointer;
+    }
+    #shortenBtn {
+      background: var(--main-color);
+    }
+    #shortenBtn:hover {
+      background: #c72525;
+    }
+    #robotBtn {
       display: none;
+      background: green;
+    }
+    #goBtn {
+      display: none;
+      background: var(--main-color);
+    }
+    #timerArea {
+      display: none;
+      margin-top: 20px;
+      font-size: 18px;
+      color: #555;
+    }
+    .link-area {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      gap: 10px;
+      word-break: break-all;
+      margin-top: 20px;
+    }
+    .copy-icon {
+      font-size: 22px;
+      color: var(--main-color);
+      cursor: pointer;
+    }
+    #copyMessage {
+      font-size: 14px;
+      color: green;
+      height: 18px;
+      margin-top: 10px;
     }
   </style>
 </head>
 <body>
-  <div id="header-container"></div>
-  <div id="container"></div>
+  <div id="headerArea"></div>
+  <div class="container" id="mainArea"></div>
 
   <script>
-    const container = document.getElementById("container");
-    const headerContainer = document.getElementById("header-container");
+    const container = document.getElementById("mainArea");
+    const headerArea = document.getElementById("headerArea");
+    const hash = location.hash.slice(1);
 
-    function showHeader() {
-      headerContainer.innerHTML = `
-        <div id="header">
-          <img src="./Logo.png" alt="Logo" />
+    function showHome() {
+      // Header only on home
+      headerArea.innerHTML = `
+        <div class="header">
+          <img src="./Logo.png" alt="Logo"/>
           <i class="fa-solid fa-circle-user"></i>
         </div>
       `;
-    }
-
-    function showHome() {
-      showHeader();
-      container.innerHTML = `
-        <h1>Link Shortener</h1>
-        <input type="text" id="urlInput" placeholder="Enter your URL..." />
-        <br/>
-        <button onclick="shortenUrl()">Shorten</button>
-      `;
-    }
-
-    function shortenUrl() {
-      const originalUrl = document.getElementById("urlInput").value.trim();
-      if (!originalUrl) {
-        alert("Please enter a URL");
-        return;
-      }
-
-      const shortCode = Math.random().toString(36).substring(2, 7);
-      const shortenedLink = `${location.origin}${location.pathname}?id=${shortCode}`;
-      localStorage.setItem(shortCode, originalUrl);
 
       container.innerHTML = `
-        <h2>Link Shortened!</h2>
-        <input type="text" value="${shortenedLink}" readonly style="width: 80%;" />
-        <br><br>
-        <button onclick="copyLink()">Copy</button>
-        <button onclick="showHome()">Shorten Another</button>
+        <h2>Link Shortener</h2>
+        <input type="text" id="originalUrl" placeholder="Paste your URL here" />
+        <button id="shortenBtn">Shorten</button>
+        <div id="shortenedLink" style="display:none;">
+          <div class="link-area">
+            <a href="#" id="shortLink" target="_blank"></a>
+            <i class="fa-solid fa-copy copy-icon" id="copyIcon" title="Copy to clipboard"></i>
+          </div>
+          <div id="copyMessage"></div>
+        </div>
       `;
-    }
 
-    function copyLink() {
-      const input = document.querySelector("input[type='text']");
-      input.select();
-      document.execCommand("copy");
-      alert("Link copied!");
+      document.getElementById("shortenBtn").onclick = () => {
+        const input = document.getElementById("originalUrl").value.trim();
+        try {
+          new URL(input);
+        } catch {
+          alert("Invalid URL!");
+          return;
+        }
+
+        const compressed = LZString.compressToEncodedURIComponent(input);
+        const shortUrl = `${location.origin}${location.pathname}#c=${compressed}`;
+        const shortLink = document.getElementById("shortLink");
+        shortLink.href = shortUrl;
+        shortLink.textContent = shortUrl;
+
+        document.getElementById("shortenedLink").style.display = "block";
+        document.getElementById("copyMessage").textContent = "";
+
+        document.getElementById("copyIcon").onclick = () => {
+          navigator.clipboard.writeText(shortUrl).then(() => {
+            document.getElementById("copyMessage").textContent = "Copied!";
+            setTimeout(() => document.getElementById("copyMessage").textContent = "", 2000);
+          });
+        };
+      };
     }
 
     function showRedirectFlow(originalUrl) {
-      headerContainer.innerHTML = ""; // Remove header on redirect
+      headerArea.innerHTML = ''; // remove header
 
       container.innerHTML = `
         <h2>Link Verification</h2>
+        <div id="robotBtnArea">
+          <button id="robotBtn">I am not Robot</button>
+        </div>
         <div id="recaptcha" class="g-recaptcha"
           data-sitekey="6Ld1akgrAAAAACrLxNX0hA7GoxT1REw7h3uZKxb_"
           data-callback="onRecaptchaSuccess">
         </div>
-        <button id="robotBtn">I am not Robot</button>
         <div id="timerArea">Please wait <span id="timer">10</span> seconds...</div>
         <button id="goBtn">Get Ready</button>
       `;
 
       const robotBtn = document.getElementById("robotBtn");
+      const recaptcha = document.getElementById("recaptcha");
       const timerArea = document.getElementById("timerArea");
       const goBtn = document.getElementById("goBtn");
 
-      timerArea.style.display = "none";
-      goBtn.style.display = "none";
-
-      robotBtn.onclick = () => {
-        grecaptcha.reset();
-        grecaptcha.render("recaptcha", {
-          sitekey: "6Ld1akgrAAAAACrLxNX0hA7GoxT1REw7h3uZKxb_",
-          callback: onRecaptchaSuccess
-        });
-        robotBtn.style.display = "none";
-      };
-
       window.onRecaptchaSuccess = () => {
-        document.getElementById("recaptcha").style.display = "none";
+        recaptcha.style.display = "none";
         timerArea.style.display = "block";
-
         let count = 10;
-        document.getElementById("timer").textContent = count;
-
         const interval = setInterval(() => {
           count--;
           document.getElementById("timer").textContent = count;
           if (count === 0) {
             clearInterval(interval);
             timerArea.style.display = "none";
-            goBtn.style.display = "inline-block";
+            goBtn.style.display = "block";
           }
         }, 1000);
+      };
 
-        goBtn.onclick = () => {
-          location.href = originalUrl;
-        };
+      robotBtn.onclick = () => {
+        robotBtn.style.display = "none";
+        grecaptcha.execute();
+      };
+
+      goBtn.onclick = () => {
+        location.href = originalUrl;
       };
     }
 
-    window.onload = () => {
-      const urlParams = new URLSearchParams(window.location.search);
-      const id = urlParams.get("id");
-
-      if (id) {
-        const originalUrl = localStorage.getItem(id);
-        if (originalUrl) {
-          showRedirectFlow(originalUrl);
-        } else {
-          container.innerHTML = "<h2>Invalid or expired link.</h2>";
-        }
-      } else {
-        showHome();
+    if (hash.startsWith("c=")) {
+      const compressed = hash.slice(2);
+      let originalUrl = null;
+      try {
+        originalUrl = LZString.decompressFromEncodedURIComponent(compressed);
+        if (!/^https?:\/\//.test(originalUrl)) throw new Error("Invalid URL");
+      } catch {
+        container.innerHTML = "<p style='color:red;'>Invalid or expired link!</p>";
       }
-    };
+      if (originalUrl) showRedirectFlow(originalUrl);
+    } else {
+      showHome();
+    }
   </script>
 </body>
 </html>
