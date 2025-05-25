@@ -3,13 +3,13 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>Link Shortener with reCAPTCHA</title>
-<!-- Font Awesome CDN for copy icon -->
+<title>Link Shortener</title>
+<!-- Font Awesome CDN for icons -->
 <link
   href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"
   rel="stylesheet"
 />
-
+<script src="https://www.google.com/recaptcha/api.js" async defer></script>
 <style>
   body {
     font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
@@ -30,12 +30,18 @@
     margin-bottom: 24px;
     color: #333;
   }
+  /* Input + Paste Icon wrapper */
+  .input-wrapper {
+    position: relative;
+    width: 100%;
+    margin-bottom: 24px;
+  }
   input[type="text"] {
-    flex: 1;
-    padding: 14px 20px;
+    width: 100%;
+    padding: 14px 44px 14px 16px; /* right padding for icon */
     font-size: 17px;
     border: 2px solid #ddd;
-    border-radius: 12px 0 0 12px;
+    border-radius: 12px;
     outline: none;
     transition: border-color 0.3s ease;
     box-sizing: border-box;
@@ -43,13 +49,27 @@
   input[type="text"]:focus {
     border-color: #007bff;
   }
-
-  /* Button */
+  .paste-icon {
+    position: absolute;
+    top: 50%;
+    right: 12px;
+    transform: translateY(-50%);
+    font-size: 22px;
+    color: #007bff;
+    cursor: pointer;
+    user-select: none;
+    transition: color 0.3s ease;
+  }
+  .paste-icon:hover {
+    color: #004080;
+  }
+  /* Shorten Button */
   button#shortenBtn {
+    width: 100%;
     padding: 14px 20px;
     font-size: 17px;
     border: none;
-    border-radius: 0 12px 12px 0;
+    border-radius: 12px;
     background: #007bff;
     color: white;
     cursor: pointer;
@@ -59,12 +79,7 @@
   button#shortenBtn:hover {
     background: #0056b3;
   }
-
-  .input-group {
-    display: flex;
-    margin-bottom: 24px;
-  }
-
+  /* Shortened Link area */
   #shortenedLink {
     font-size: 16px;
     color: #333;
@@ -104,14 +119,28 @@
     color: green;
     height: 18px;
   }
-
-  #goBtn,
-  #timerArea,
-  #robotArea {
+  /* reCAPTCHA and buttons */
+  #robotBtn {
     display: none;
+    background: #28a745;
+    padding: 12px 24px;
+    font-size: 16px;
+    border-radius: 8px;
+    border: none;
+    color: white;
+    cursor: pointer;
+  }
+  #robotBtn:hover {
+    background: #1e7e34;
+  }
+  #timerArea {
+    display: none;
+    font-size: 18px;
+    color: #555;
     margin-top: 20px;
   }
   #goBtn {
+    display: none;
     background: #007bff;
     color: white;
     padding: 12px 24px;
@@ -119,43 +148,27 @@
     border-radius: 8px;
     border: none;
     cursor: pointer;
+    margin-top: 20px;
   }
   #goBtn:hover {
     background: #0056b3;
   }
-  #timerArea {
-    font-size: 18px;
-    color: #555;
-  }
-
   /* Responsive */
   @media(max-width: 520px) {
     .container {
       margin: 20px 10px;
       padding: 20px 15px;
     }
-    button#shortenBtn, input[type="text"] {
+    input[type="text"] {
+      font-size: 16px;
+      padding: 12px 44px 12px 16px;
+    }
+    button#shortenBtn {
       font-size: 16px;
       padding: 12px 16px;
     }
-    .input-group {
-      flex-direction: column;
-    }
-    input[type="text"] {
-      border-radius: 12px 12px 0 0;
-      margin-bottom: 10px;
-      width: 100%;
-    }
-    button#shortenBtn {
-      border-radius: 0 0 12px 12px;
-      width: 100%;
-    }
   }
 </style>
-
-<!-- Load Google reCAPTCHA v2 -->
-<script src="https://www.google.com/recaptcha/api.js" async defer></script>
-
 </head>
 <body>
 <div class="container" id="mainArea"></div>
@@ -173,30 +186,36 @@
     } else {
       container.innerHTML = `
         <h2>Link Verification</h2>
-        <div id="robotArea" class="g-recaptcha" data-sitekey="6Ld1akgrAAAAACrLxNX0hA7GoxT1REw7h3uZKxb_" data-callback="onRecaptchaSuccess"></div>
+        <div id="recaptcha" class="g-recaptcha" data-sitekey="6Ld1akgrAAAAACrLxNX0hA7GoxT1REw7h3uZKxb_" data-callback="onRecaptchaSuccess"></div>
+        <button id="robotBtn">I am not Robot</button>
         <div id="timerArea">Please wait <span id="timer">10</span> seconds...</div>
         <button id="goBtn">Get Ready</button>
       `;
 
-      const robotArea = document.getElementById("robotArea");
+      const recaptchaEl = document.getElementById("recaptcha");
+      const robotBtn = document.getElementById("robotBtn");
       const timerArea = document.getElementById("timerArea");
       const goBtn = document.getElementById("goBtn");
 
-      // Initially hide timer and go button, show reCAPTCHA
+      // Initially hide robotBtn, timer and goBtn until reCAPTCHA verified
+      robotBtn.style.display = "none";
       timerArea.style.display = "none";
       goBtn.style.display = "none";
-      robotArea.style.display = "block";
 
-      window.onRecaptchaSuccess = function() {
-        // reCAPTCHA সফল হলে এখানে আসবে
-        robotArea.style.display = "none"; // reCAPTCHA লুকিয়ে দাও
-        timerArea.style.display = "block"; // টাইমার দেখাও
+      window.onRecaptchaSuccess = () => {
+        // reCAPTCHA verified
+        recaptchaEl.style.display = "none";
+        robotBtn.style.display = "inline-block";
+      };
+
+      robotBtn.onclick = () => {
+        robotBtn.style.display = "none";
+        timerArea.style.display = "block";
 
         let count = 10;
-        const timerSpan = document.getElementById("timer");
         const interval = setInterval(() => {
           count--;
-          timerSpan.textContent = count;
+          document.getElementById("timer").innerText = count;
           if (count === 0) {
             clearInterval(interval);
             timerArea.style.display = "none";
@@ -213,10 +232,11 @@
     // Home / Shorten Page
     container.innerHTML = `
       <h2>Link Shortener</h2>
-      <div class="input-group">
+      <div class="input-wrapper">
         <input type="text" id="originalUrl" placeholder="Paste your URL here" autocomplete="off" />
-        <button id="shortenBtn">Shorten</button>
+        <i class="fa-regular fa-clipboard paste-icon" id="pasteBtn" title="Paste from clipboard"></i>
       </div>
+      <button id="shortenBtn">Shorten</button>
       <div id="shortenedLink">
         <div class="link-area" style="display:none;">
           <a href="#" id="shortLink" target="_blank" rel="noopener noreferrer"></a>
@@ -232,45 +252,53 @@
     const copyIcon = document.getElementById("copyIcon");
     const linkArea = container.querySelector(".link-area");
     const copyMessage = document.getElementById("copyMessage");
+    const pasteBtn = document.getElementById("pasteBtn");
+
+    pasteBtn.addEventListener('click', async () => {
+      try {
+        const text = await navigator.clipboard.readText();
+        originalUrlInput.value = text;
+      } catch (err) {
+        alert('Failed to read clipboard contents');
+      }
+    });
 
     shortenBtn.onclick = () => {
-      const originalUrl = originalUrlInput.value.trim();
-      if (!originalUrl) {
-        alert("Please enter a URL");
+      const url = originalUrlInput.value.trim();
+      if (!url) {
+        alert("Please enter a URL to shorten");
         return;
       }
-
       // Simple URL validation
       try {
-        new URL(originalUrl);
+        new URL(url);
       } catch {
         alert("Please enter a valid URL");
         return;
       }
 
-      const newId = Math.random().toString(36).substr(2, 6);
-      localStorage.setItem("link_" + newId, originalUrl);
+      // Generate simple unique id (in real app use better ID)
+      const id = Math.random().toString(36).slice(2, 8);
+      localStorage.setItem("link_" + id, url);
 
-      const shortUrl = `${window.location.origin}${window.location.pathname}?id=${newId}`;
+      // Show short link
+      const shortUrl = `${window.location.origin}${window.location.pathname}?id=${id}`;
       shortLink.href = shortUrl;
       shortLink.textContent = shortUrl;
-
-      copyMessage.textContent = "";
       linkArea.style.display = "flex";
+      copyMessage.textContent = "";
     };
 
     copyIcon.onclick = () => {
-      if (!shortLink.href) return;
-      navigator.clipboard.writeText(shortLink.href).then(() => {
-        copyMessage.textContent = "Copied!";
+      navigator.clipboard.writeText(shortLink.textContent).then(() => {
+        copyMessage.textContent = "Copied to clipboard!";
         setTimeout(() => {
           copyMessage.textContent = "";
-        }, 1500);
-      }).catch(() => {
-        copyMessage.textContent = "Copy failed";
+        }, 2000);
       });
     };
   }
 </script>
+
 </body>
 </html>
