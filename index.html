@@ -6,6 +6,7 @@
   <title>Link Shortener</title>
   <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet"/>
   <script src="https://www.google.com/recaptcha/api.js" async defer></script>
+  <script src="https://cdn.jsdelivr.net/npm/lz-string@1.4.4/libs/lz-string.min.js"></script>
   <style>
     body {
       font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
@@ -70,7 +71,7 @@
       justify-content: center;
       align-items: center;
       gap: 10px;
-      word-break: break-all;
+      word-break: break-word;
     }
     #shortenedLink a {
       color: #007bff;
@@ -119,55 +120,7 @@
     const container = document.getElementById("mainArea");
     const hash = location.hash.slice(1);
 
-    if (hash) {
-      // Decode base64 string
-      let decoded = "";
-      try {
-        decoded = atob(decodeURIComponent(hash));
-        if (!/^https?:\/\//.test(decoded)) throw "Invalid link";
-      } catch {
-        container.innerHTML = "<p style='color:red;'>Invalid or expired link!</p>";
-        throw new Error("Invalid link");
-      }
-
-      container.innerHTML = `
-        <h2>Link Verification</h2>
-        <div id="recaptcha" class="g-recaptcha" data-sitekey="6Ld1akgrAAAAACrLxNX0hA7GoxT1REw7h3uZKxb_" data-callback="onRecaptchaSuccess"></div>
-        <button id="robotBtn">I am not Robot</button>
-        <div id="timerArea">Please wait <span id="timer">10</span> seconds...</div>
-        <button id="goBtn">Get Ready</button>
-      `;
-
-      const robotBtn = document.getElementById("robotBtn");
-      const timerArea = document.getElementById("timerArea");
-      const goBtn = document.getElementById("goBtn");
-
-      window.onRecaptchaSuccess = () => {
-        document.getElementById("recaptcha").style.display = "none";
-        robotBtn.style.display = "inline-block";
-      };
-
-      robotBtn.onclick = () => {
-        robotBtn.style.display = "none";
-        timerArea.style.display = "block";
-        let count = 10;
-        const interval = setInterval(() => {
-          count--;
-          document.getElementById("timer").textContent = count;
-          if (count === 0) {
-            clearInterval(interval);
-            timerArea.style.display = "none";
-            goBtn.style.display = "inline-block";
-          }
-        }, 1000);
-      };
-
-      goBtn.onclick = () => {
-        location.href = decoded;
-      };
-
-    } else {
-      // Home
+    function showHome() {
       container.innerHTML = `
         <h2>Link Shortener</h2>
         <div class="input-wrapper">
@@ -209,9 +162,9 @@
           return;
         }
 
-        // Encode the URL using base64 (shorter and secure than full query)
-        const encoded = encodeURIComponent(btoa(url));
-        const shortUrl = `${location.origin}${location.pathname}#${encoded}`;
+        const compressed = LZString.compressToEncodedURIComponent(url);
+        const shortUrl = `${location.origin}${location.pathname}#c=${compressed}`;
+
         shortLink.href = shortUrl;
         shortLink.textContent = shortUrl;
         linkArea.style.display = "flex";
@@ -224,6 +177,65 @@
           setTimeout(() => copyMessage.textContent = "", 2000);
         });
       };
+    }
+
+    function showRedirectFlow(originalUrl) {
+      container.innerHTML = `
+        <h2>Link Verification</h2>
+        <button id="robotBtn">I am not Robot</button>
+        <div id="recaptcha" class="g-recaptcha" data-sitekey="6Ld1akgrAAAAACrLxNX0hA7GoxT1REw7h3uZKxb_" data-callback="onRecaptchaSuccess" style="display:none;"></div>
+        <div id="timerArea" style="display:none;">Please wait <span id="timer">10</span> seconds...</div>
+        <button id="goBtn" style="display:none;">Get Ready</button>
+      `;
+
+      const robotBtn = document.getElementById("robotBtn");
+      const recaptcha = document.getElementById("recaptcha");
+      const timerArea = document.getElementById("timerArea");
+      const goBtn = document.getElementById("goBtn");
+
+      robotBtn.style.display = "inline-block";
+
+      robotBtn.onclick = () => {
+        robotBtn.style.display = "none";
+        recaptcha.style.display = "block";
+      };
+
+      window.onRecaptchaSuccess = () => {
+        recaptcha.style.display = "none";
+        timerArea.style.display = "block";
+
+        let count = 10;
+        const interval = setInterval(() => {
+          count--;
+          document.getElementById("timer").textContent = count;
+          if (count === 0) {
+            clearInterval(interval);
+            timerArea.style.display = "none";
+            goBtn.style.display = "inline-block";
+          }
+        }, 1000);
+      };
+
+      goBtn.onclick = () => {
+        location.href = originalUrl;
+      };
+    }
+
+    if (hash.startsWith('c=')) {
+      const compressed = hash.slice(2);
+      let originalUrl = null;
+      try {
+        originalUrl = LZString.decompressFromEncodedURIComponent(compressed);
+        if (!/^https?:\/\//.test(originalUrl)) throw new Error("Invalid URL");
+      } catch {
+        container.innerHTML = "<p style='color:red;'>Invalid or expired link!</p>";
+      }
+
+      if (originalUrl) {
+        showRedirectFlow(originalUrl);
+      }
+    } else {
+      showHome();
     }
   </script>
 </body>
