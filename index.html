@@ -30,7 +30,6 @@
     margin-bottom: 24px;
     color: #333;
   }
-  /* Input + Paste Icon wrapper */
   .input-wrapper {
     position: relative;
     width: 100%;
@@ -38,7 +37,7 @@
   }
   input[type="text"] {
     width: 100%;
-    padding: 14px 44px 14px 16px; /* right padding for icon */
+    padding: 14px 44px 14px 16px;
     font-size: 17px;
     border: 2px solid #ddd;
     border-radius: 12px;
@@ -63,7 +62,6 @@
   .paste-icon:hover {
     color: #004080;
   }
-  /* Shorten Button */
   button#shortenBtn {
     width: 100%;
     padding: 14px 20px;
@@ -79,7 +77,6 @@
   button#shortenBtn:hover {
     background: #0056b3;
   }
-  /* Shortened Link area */
   #shortenedLink {
     font-size: 16px;
     color: #333;
@@ -153,7 +150,6 @@
   #goBtn:hover {
     background: #0056b3;
   }
-  /* Responsive */
   @media(max-width: 520px) {
     .container {
       margin: 20px 10px;
@@ -176,13 +172,24 @@
 <script>
   const container = document.getElementById("mainArea");
   const params = new URLSearchParams(window.location.search);
-  const id = params.get("id");
+  const encodedUrl = params.get("url");
 
-  if (id) {
+  function base64Encode(str) {
+    return btoa(unescape(encodeURIComponent(str)));
+  }
+  function base64Decode(str) {
+    try {
+      return decodeURIComponent(escape(atob(str)));
+    } catch {
+      return null;
+    }
+  }
+
+  if (encodedUrl) {
     // Redirect + Verification Mode
-    const targetUrl = localStorage.getItem("link_" + id);
+    const targetUrl = base64Decode(encodedUrl);
     if (!targetUrl) {
-      container.innerHTML = "<p style='color:red; font-weight:600;'>Invalid or expired link!</p>";
+      container.innerHTML = "<p style='color:red; font-weight:600;'>Invalid or corrupted link!</p>";
     } else {
       container.innerHTML = `
         <h2>Link Verification</h2>
@@ -197,13 +204,11 @@
       const timerArea = document.getElementById("timerArea");
       const goBtn = document.getElementById("goBtn");
 
-      // Initially hide robotBtn, timer and goBtn until reCAPTCHA verified
       robotBtn.style.display = "none";
       timerArea.style.display = "none";
       goBtn.style.display = "none";
 
       window.onRecaptchaSuccess = () => {
-        // reCAPTCHA verified
         recaptchaEl.style.display = "none";
         robotBtn.style.display = "inline-block";
       };
@@ -269,7 +274,6 @@
         alert("Please enter a URL to shorten");
         return;
       }
-      // Simple URL validation
       try {
         new URL(url);
       } catch {
@@ -277,12 +281,10 @@
         return;
       }
 
-      // Generate simple unique id (in real app use better ID)
-      const id = Math.random().toString(36).slice(2, 8);
-      localStorage.setItem("link_" + id, url);
+      // Encode URL to base64 for putting in query param
+      const encoded = base64Encode(url);
+      const shortUrl = `${window.location.origin}${window.location.pathname}?url=${encoded}`;
 
-      // Show short link
-      const shortUrl = `${window.location.origin}${window.location.pathname}?id=${id}`;
       shortLink.href = shortUrl;
       shortLink.textContent = shortUrl;
       linkArea.style.display = "flex";
