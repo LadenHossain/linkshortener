@@ -31,7 +31,7 @@
     color: #333;
   }
   input[type="text"] {
-    width: 100%;
+    flex: 1;
     padding: 14px 20px;
     font-size: 17px;
     border: 2px solid #ddd;
@@ -182,8 +182,10 @@
       const timerArea = document.getElementById("timerArea");
       const goBtn = document.getElementById("goBtn");
 
+      // Initially hide timer and go button, show reCAPTCHA
       timerArea.style.display = "none";
       goBtn.style.display = "none";
+      robotArea.style.display = "block";
 
       window.onRecaptchaSuccess = function() {
         // reCAPTCHA সফল হলে এখানে আসবে
