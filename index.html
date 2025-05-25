@@ -12,7 +12,23 @@
       font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
       background: #f9fafb;
       margin: 0;
-      padding: 20px;
+      padding: 0;
+    }
+    header {
+      background: #ff3131;
+      color: white;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 12px 20px;
+      border-radius: 0 0 12px 12px;
+    }
+    header img {
+      height: 36px;
+    }
+    header .icon {
+      font-size: 26px;
+      color: white;
     }
     .container {
       max-width: 480px;
@@ -39,29 +55,29 @@
       transition: border-color 0.3s ease;
       box-sizing: border-box;
     }
-    input[type="text"]:focus { border-color: #007bff; }
+    input[type="text"]:focus { border-color: #ff3131; }
     .paste-icon {
       position: absolute;
       top: 50%;
       right: 12px;
       transform: translateY(-50%);
       font-size: 22px;
-      color: #007bff;
+      color: #ff3131;
       cursor: pointer;
     }
-    .paste-icon:hover { color: #004080; }
+    .paste-icon:hover { color: #cc0000; }
     button {
       width: 100%;
       padding: 14px 20px;
       font-size: 17px;
       border: none;
       border-radius: 12px;
-      background: #007bff;
+      background: #ff3131;
       color: white;
       cursor: pointer;
       transition: background 0.3s ease;
     }
-    button:hover { background: #0056b3; }
+    button:hover { background: #cc0000; }
     #shortenedLink {
       font-size: 16px;
       color: #333;
@@ -71,10 +87,10 @@
       justify-content: center;
       align-items: center;
       gap: 10px;
-      word-break: break-word;
+      word-break: break-all;
     }
     #shortenedLink a {
-      color: #007bff;
+      color: #ff3131;
       text-decoration: none;
       font-weight: 500;
     }
@@ -82,9 +98,9 @@
     .copy-icon {
       cursor: pointer;
       font-size: 22px;
-      color: #007bff;
+      color: #ff3131;
     }
-    .copy-icon:hover { color: #004080; }
+    .copy-icon:hover { color: #cc0000; }
     #copyMessage {
       margin-top: 10px;
       font-size: 14px;
@@ -103,8 +119,8 @@
     }
     #robotBtn { background: #28a745; }
     #robotBtn:hover { background: #1e7e34; }
-    #goBtn { background: #007bff; }
-    #goBtn:hover { background: #0056b3; }
+    #goBtn { background: #ff3131; }
+    #goBtn:hover { background: #cc0000; }
     #timerArea {
       display: none;
       font-size: 18px;
@@ -114,13 +130,28 @@
   </style>
 </head>
 <body>
+
+  <div id="headerContainer"></div>
+
   <div class="container" id="mainArea"></div>
 
   <script>
+    const headerContainer = document.getElementById("headerContainer");
     const container = document.getElementById("mainArea");
     const hash = location.hash.slice(1);
 
+    function renderHeader() {
+      headerContainer.innerHTML = `
+        <header>
+          <img src="./Logo.png" alt="Logo">
+          <i class="fa-solid fa-circle-user icon"></i>
+        </header>
+      `;
+    }
+
     function showHome() {
+      renderHeader(); // Show header only on home page
+
       container.innerHTML = `
         <h2>Link Shortener</h2>
         <div class="input-wrapper">
@@ -180,30 +211,25 @@
     }
 
     function showRedirectFlow(originalUrl) {
+      headerContainer.innerHTML = ""; // Remove header on redirect page
+
       container.innerHTML = `
         <h2>Link Verification</h2>
+        <div id="recaptcha" class="g-recaptcha" data-sitekey="6Ld1akgrAAAAACrLxNX0hA7GoxT1REw7h3uZKxb_" data-callback="onRecaptchaSuccess"></div>
         <button id="robotBtn">I am not Robot</button>
-        <div id="recaptcha" class="g-recaptcha" data-sitekey="6Ld1akgrAAAAACrLxNX0hA7GoxT1REw7h3uZKxb_" data-callback="onRecaptchaSuccess" style="display:none;"></div>
-        <div id="timerArea" style="display:none;">Please wait <span id="timer">10</span> seconds...</div>
-        <button id="goBtn" style="display:none;">Get Ready</button>
+        <div id="timerArea">Please wait <span id="timer">10</span> seconds...</div>
+        <button id="goBtn">Get Ready</button>
       `;
 
       const robotBtn = document.getElementById("robotBtn");
-      const recaptcha = document.getElementById("recaptcha");
       const timerArea = document.getElementById("timerArea");
       const goBtn = document.getElementById("goBtn");
 
       robotBtn.style.display = "inline-block";
 
-      robotBtn.onclick = () => {
-        robotBtn.style.display = "none";
-        recaptcha.style.display = "block";
-      };
-
       window.onRecaptchaSuccess = () => {
-        recaptcha.style.display = "none";
+        document.getElementById("recaptcha").style.display = "none";
         timerArea.style.display = "block";
-
         let count = 10;
         const interval = setInterval(() => {
           count--;
@@ -214,6 +240,10 @@
             goBtn.style.display = "inline-block";
           }
         }, 1000);
+      };
+
+      robotBtn.onclick = () => {
+        grecaptcha.execute();
       };
 
       goBtn.onclick = () => {
