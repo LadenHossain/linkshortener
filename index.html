@@ -2,220 +2,121 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Link Shortener</title>
-  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Custom Link Shortener</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
   <script src="https://www.google.com/recaptcha/api.js" async defer></script>
-  <script src="https://cdn.jsdelivr.net/npm/lz-string@1.4.4/libs/lz-string.min.js"></script>
   <style>
     body {
-      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-      background: #f9fafb;
       margin: 0;
-      padding: 0;
+      font-family: Arial, sans-serif;
+      background: #fff;
+      color: #333;
     }
-    header {
-      background: #ff3131;
-      color: white;
+    #header {
       display: flex;
       justify-content: space-between;
       align-items: center;
-      padding: 12px 20px;
-      border-radius: 0 0 12px 12px;
-    }
-    header img {
-      height: 36px;
-    }
-    header .icon {
-      font-size: 26px;
+      background-color: #ff3131;
       color: white;
+      padding: 10px 20px;
     }
-    .container {
-      max-width: 480px;
-      margin: 40px auto;
-      background: white;
-      padding: 30px 25px;
-      border-radius: 12px;
-      box-shadow: 0 8px 16px rgba(0,0,0,0.1);
+    #header img {
+      height: 40px;
+    }
+    #header i {
+      font-size: 24px;
+    }
+    #container {
       text-align: center;
-    }
-    h2 { margin-bottom: 24px; color: #333; }
-    .input-wrapper {
-      position: relative;
-      width: 100%;
-      margin-bottom: 24px;
+      padding: 40px 20px;
     }
     input[type="text"] {
-      width: 100%;
-      padding: 14px 44px 14px 16px;
-      font-size: 17px;
-      border: 2px solid #ddd;
-      border-radius: 12px;
-      outline: none;
-      transition: border-color 0.3s ease;
-      box-sizing: border-box;
+      padding: 10px;
+      width: 70%;
+      max-width: 400px;
+      font-size: 16px;
     }
-    input[type="text"]:focus { border-color: #ff3131; }
-    .paste-icon {
-      position: absolute;
-      top: 50%;
-      right: 12px;
-      transform: translateY(-50%);
-      font-size: 22px;
-      color: #ff3131;
-      cursor: pointer;
-    }
-    .paste-icon:hover { color: #cc0000; }
     button {
-      width: 100%;
-      padding: 14px 20px;
-      font-size: 17px;
-      border: none;
-      border-radius: 12px;
-      background: #ff3131;
+      padding: 10px 20px;
+      background-color: #ff3131;
       color: white;
+      border: none;
       cursor: pointer;
-      transition: background 0.3s ease;
-    }
-    button:hover { background: #cc0000; }
-    #shortenedLink {
-      font-size: 16px;
-      color: #333;
-    }
-    #shortenedLink .link-area {
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      gap: 10px;
-      word-break: break-all;
-    }
-    #shortenedLink a {
-      color: #ff3131;
-      text-decoration: none;
-      font-weight: 500;
-    }
-    #shortenedLink a:hover { text-decoration: underline; }
-    .copy-icon {
-      cursor: pointer;
-      font-size: 22px;
-      color: #ff3131;
-    }
-    .copy-icon:hover { color: #cc0000; }
-    #copyMessage {
       margin-top: 10px;
-      font-size: 14px;
-      color: green;
-      height: 18px;
     }
-    #robotBtn, #goBtn {
-      display: none;
-      margin-top: 20px;
-      padding: 12px 24px;
-      font-size: 16px;
-      border-radius: 8px;
-      border: none;
-      color: white;
-      cursor: pointer;
+    button:hover {
+      opacity: 0.9;
     }
-    #robotBtn { background: #28a745; }
-    #robotBtn:hover { background: #1e7e34; }
-    #goBtn { background: #ff3131; }
-    #goBtn:hover { background: #cc0000; }
-    #timerArea {
-      display: none;
-      font-size: 18px;
-      color: #555;
+    #timerArea, #goBtn {
       margin-top: 20px;
+      display: none;
     }
   </style>
 </head>
 <body>
-
-  <div id="headerContainer"></div>
-
-  <div class="container" id="mainArea"></div>
+  <div id="header-container"></div>
+  <div id="container"></div>
 
   <script>
-    const headerContainer = document.getElementById("headerContainer");
-    const container = document.getElementById("mainArea");
-    const hash = location.hash.slice(1);
+    const container = document.getElementById("container");
+    const headerContainer = document.getElementById("header-container");
 
-    function renderHeader() {
+    function showHeader() {
       headerContainer.innerHTML = `
-        <header>
-          <img src="./Logo.png" alt="Logo">
-          <i class="fa-solid fa-circle-user icon"></i>
-        </header>
+        <div id="header">
+          <img src="./Logo.png" alt="Logo" />
+          <i class="fa-solid fa-circle-user"></i>
+        </div>
       `;
     }
 
     function showHome() {
-      renderHeader(); // Show header only on home page
+      showHeader();
+      container.innerHTML = `
+        <h1>Link Shortener</h1>
+        <input type="text" id="urlInput" placeholder="Enter your URL..." />
+        <br/>
+        <button onclick="shortenUrl()">Shorten</button>
+      `;
+    }
+
+    function shortenUrl() {
+      const originalUrl = document.getElementById("urlInput").value.trim();
+      if (!originalUrl) {
+        alert("Please enter a URL");
+        return;
+      }
+
+      const shortCode = Math.random().toString(36).substring(2, 7);
+      const shortenedLink = `${location.origin}${location.pathname}?id=${shortCode}`;
+      localStorage.setItem(shortCode, originalUrl);
 
       container.innerHTML = `
-        <h2>Link Shortener</h2>
-        <div class="input-wrapper">
-          <input type="text" id="originalUrl" placeholder="Paste your URL here" />
-          <i class="fa-regular fa-clipboard paste-icon" id="pasteBtn" title="Paste from clipboard"></i>
-        </div>
-        <button id="shortenBtn">Shorten</button>
-        <div id="shortenedLink">
-          <div class="link-area" style="display:none;">
-            <a href="#" id="shortLink" target="_blank"></a>
-            <i class="fa-solid fa-copy copy-icon" id="copyIcon" title="Copy to clipboard"></i>
-          </div>
-          <div id="copyMessage"></div>
-        </div>
+        <h2>Link Shortened!</h2>
+        <input type="text" value="${shortenedLink}" readonly style="width: 80%;" />
+        <br><br>
+        <button onclick="copyLink()">Copy</button>
+        <button onclick="showHome()">Shorten Another</button>
       `;
+    }
 
-      const shortenBtn = document.getElementById("shortenBtn");
-      const originalUrlInput = document.getElementById("originalUrl");
-      const shortLink = document.getElementById("shortLink");
-      const copyIcon = document.getElementById("copyIcon");
-      const linkArea = container.querySelector(".link-area");
-      const copyMessage = document.getElementById("copyMessage");
-      const pasteBtn = document.getElementById("pasteBtn");
-
-      pasteBtn.onclick = async () => {
-        try {
-          originalUrlInput.value = await navigator.clipboard.readText();
-        } catch {
-          alert("Clipboard read failed.");
-        }
-      };
-
-      shortenBtn.onclick = () => {
-        const url = originalUrlInput.value.trim();
-        try {
-          new URL(url);
-        } catch {
-          alert("Enter a valid URL");
-          return;
-        }
-
-        const compressed = LZString.compressToEncodedURIComponent(url);
-        const shortUrl = `${location.origin}${location.pathname}#c=${compressed}`;
-
-        shortLink.href = shortUrl;
-        shortLink.textContent = shortUrl;
-        linkArea.style.display = "flex";
-        copyMessage.textContent = "";
-      };
-
-      copyIcon.onclick = () => {
-        navigator.clipboard.writeText(shortLink.textContent).then(() => {
-          copyMessage.textContent = "Copied to clipboard!";
-          setTimeout(() => copyMessage.textContent = "", 2000);
-        });
-      };
+    function copyLink() {
+      const input = document.querySelector("input[type='text']");
+      input.select();
+      document.execCommand("copy");
+      alert("Link copied!");
     }
 
     function showRedirectFlow(originalUrl) {
-      headerContainer.innerHTML = ""; // Remove header on redirect page
+      headerContainer.innerHTML = ""; // Remove header on redirect
 
       container.innerHTML = `
         <h2>Link Verification</h2>
-        <div id="recaptcha" class="g-recaptcha" data-sitekey="6Ld1akgrAAAAACrLxNX0hA7GoxT1REw7h3uZKxb_" data-callback="onRecaptchaSuccess"></div>
+        <div id="recaptcha" class="g-recaptcha"
+          data-sitekey="6Ld1akgrAAAAACrLxNX0hA7GoxT1REw7h3uZKxb_"
+          data-callback="onRecaptchaSuccess">
+        </div>
         <button id="robotBtn">I am not Robot</button>
         <div id="timerArea">Please wait <span id="timer">10</span> seconds...</div>
         <button id="goBtn">Get Ready</button>
@@ -225,12 +126,25 @@
       const timerArea = document.getElementById("timerArea");
       const goBtn = document.getElementById("goBtn");
 
-      robotBtn.style.display = "inline-block";
+      timerArea.style.display = "none";
+      goBtn.style.display = "none";
+
+      robotBtn.onclick = () => {
+        grecaptcha.reset();
+        grecaptcha.render("recaptcha", {
+          sitekey: "6Ld1akgrAAAAACrLxNX0hA7GoxT1REw7h3uZKxb_",
+          callback: onRecaptchaSuccess
+        });
+        robotBtn.style.display = "none";
+      };
 
       window.onRecaptchaSuccess = () => {
         document.getElementById("recaptcha").style.display = "none";
         timerArea.style.display = "block";
+
         let count = 10;
+        document.getElementById("timer").textContent = count;
+
         const interval = setInterval(() => {
           count--;
           document.getElementById("timer").textContent = count;
@@ -240,33 +154,28 @@
             goBtn.style.display = "inline-block";
           }
         }, 1000);
-      };
 
-      robotBtn.onclick = () => {
-        grecaptcha.execute();
-      };
-
-      goBtn.onclick = () => {
-        location.href = originalUrl;
+        goBtn.onclick = () => {
+          location.href = originalUrl;
+        };
       };
     }
 
-    if (hash.startsWith('c=')) {
-      const compressed = hash.slice(2);
-      let originalUrl = null;
-      try {
-        originalUrl = LZString.decompressFromEncodedURIComponent(compressed);
-        if (!/^https?:\/\//.test(originalUrl)) throw new Error("Invalid URL");
-      } catch {
-        container.innerHTML = "<p style='color:red;'>Invalid or expired link!</p>";
-      }
+    window.onload = () => {
+      const urlParams = new URLSearchParams(window.location.search);
+      const id = urlParams.get("id");
 
-      if (originalUrl) {
-        showRedirectFlow(originalUrl);
+      if (id) {
+        const originalUrl = localStorage.getItem(id);
+        if (originalUrl) {
+          showRedirectFlow(originalUrl);
+        } else {
+          container.innerHTML = "<h2>Invalid or expired link.</h2>";
+        }
+      } else {
+        showHome();
       }
-    } else {
-      showHome();
-    }
+    };
   </script>
 </body>
 </html>
