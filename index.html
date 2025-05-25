@@ -114,7 +114,6 @@
     const hash = location.hash.slice(1);
 
     function showHome() {
-      // Header only on home
       headerArea.innerHTML = `
         <div class="header">
           <img src="./Logo.png" alt="Logo"/>
@@ -168,7 +167,7 @@
       container.innerHTML = `
         <h2>Link Verification</h2>
         <div id="robotBtnArea">
-          <button id="robotBtn">I am not Robot</button>
+          <button id="robotBtn" disabled>I am not Robot</button>
         </div>
         <div id="recaptcha" class="g-recaptcha"
           data-sitekey="6Ld1akgrAAAAACrLxNX0hA7GoxT1REw7h3uZKxb_"
@@ -183,9 +182,21 @@
       const timerArea = document.getElementById("timerArea");
       const goBtn = document.getElementById("goBtn");
 
+      robotBtn.style.display = "block";
+      recaptcha.style.display = "block";
+      timerArea.style.display = "none";
+      goBtn.style.display = "none";
+
       window.onRecaptchaSuccess = () => {
+        robotBtn.disabled = false;
+      };
+
+      robotBtn.onclick = () => {
+        if (robotBtn.disabled) return;
+        robotBtn.style.display = "none";
         recaptcha.style.display = "none";
         timerArea.style.display = "block";
+
         let count = 10;
         const interval = setInterval(() => {
           count--;
@@ -196,11 +207,6 @@
             goBtn.style.display = "block";
           }
         }, 1000);
-      };
-
-      robotBtn.onclick = () => {
-        robotBtn.style.display = "none";
-        grecaptcha.execute();
       };
 
       goBtn.onclick = () => {
